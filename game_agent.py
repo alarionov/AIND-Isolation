@@ -8,7 +8,6 @@ relative strength using tournament.py and include the results in your report.
 """
 import random
 
-
 class Timeout(Exception):
     """Subclass base exception for code clarity."""
     pass
@@ -37,9 +36,12 @@ def custom_score(game, player):
         The heuristic value of the current game state to the specified player.
     """
 
-    # TODO: finish this function!
-    raise NotImplementedError
+    another_player = game.get_opponent(player)
 
+    score1 = len(game.get_legal_moves(player))
+    score2 = len(game.get_legal_moves(another_player))
+
+    return float(score1 - score2)
 
 class CustomPlayer:
     """Game-playing agent that chooses a move using your evaluation function
@@ -119,24 +121,37 @@ class CustomPlayer:
         self.time_left = time_left
 
         # TODO: finish this function!
+        score_method = getattr(self, self.method)
 
         # Perform any required initializations, including selecting an initial
         # move from the game board (i.e., an opening book), or returning
         # immediately if there are no legal moves
+        move = None
 
         try:
             # The search method call (alpha beta or minimax) should happen in
             # here in order to avoid timeout. The try/except block will
             # automatically catch the exception raised by the search method
             # when the timer gets close to expiring
-            pass
+
+            if self.iterative:
+                depth = 1
+                while 1:
+                    if self.search_depth > 0:
+                        if depth > self.search_depth:
+                            break
+
+                    score, move = score_method(game, depth)
+                    depth = depth + 1
+            else:
+                score, move = score_method(game, 1)
 
         except Timeout:
             # Handle any actions required at timeout, if necessary
             pass
 
         # Return the best move from the last completed search iteration
-        raise NotImplementedError
+        return move
 
     def minimax(self, game, depth, maximizing_player=True):
         """Implement the minimax search algorithm as described in the lectures.
@@ -169,11 +184,26 @@ class CustomPlayer:
                 to pass the project unit tests; you cannot call any other
                 evaluation function directly.
         """
+
         if self.time_left() < self.TIMER_THRESHOLD:
             raise Timeout()
 
-        # TODO: finish this function!
-        raise NotImplementedError
+        best_move  = (-1, -1)
+        best_score = float('-inf')
+
+        for next_move in game.get_legal_moves():
+            new_game  = game.forecast_move(next_move)
+
+            if depth > 1:
+                next_score, move = self.minimax(new_game, depth - 1)
+            else:
+                next_score = self.score(new_game, self)
+
+            if next_score > best_score:
+                best_move  = next_move
+                best_score = next_score
+
+        return best_score, best_move
 
     def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf"), maximizing_player=True):
         """Implement minimax search with alpha-beta pruning as described in the
@@ -217,4 +247,32 @@ class CustomPlayer:
             raise Timeout()
 
         # TODO: finish this function!
-        raise NotImplementedError
+        best_move  = (-1, -1)
+
+        if depth == 0:
+            return self.score(game, self), best_move
+
+        best_score = float('-inf') if maximizing_player else float('inf')
+
+        for next_move in game.get_legal_moves():
+            new_game  = game.forecast_move(next_move)
+            next_score, _ = self.alphabeta(new_game, depth - 1, alpha, beta, not maximizing_player)
+
+            if maximizing_player:
+                if next_score > best_score:
+                    best_score = next_score
+                    best_move  = next_move
+
+                alpha = max(alpha, best_score)
+
+            else:
+                if next_score < best_score:
+                    best_score = next_score
+                    best_move  = next_move
+
+                beta = min(beta, best_score)
+
+            if alpha >= beta:
+                break
+
+        return best_score, best_move
