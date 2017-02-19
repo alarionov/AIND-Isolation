@@ -1,0 +1,56 @@
+---
+title: "Game Tree Searching by Min / Max Approximation"
+author: "Artem Larionov"
+date: "2/19/2017"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Goals of the research
+
+The paper suggests a method for reducing the computational expenses of exploring a game tree, which will always expand the node that is expected to have the largest effect on the value.
+
+## Min/Max Approximation
+
+Min/Max approximation method attempts to focus the computer's
+attention on the important lines of play. The key idea is to approximate the
+"min" and "max" operators with generalized mean-value operators. These are
+good approximations to the min/max operators, but have continuous derivatives
+with respect to all arguments.
+
+# Results
+The game of Connect-Four was chosen as a basis the experiments because it is
+commercially available and well known, yet simple to describe and implement.
+
+## Experimental results
+
+|Resource bound per turn | MM wins | AB wins | Ties   |
+|------------------------|---------|---------|--------|
+| 1 second               | 41      | 46      | 11     |
+| 2 second               | 40      | 42      | 16     |
+| 3 seconds              | 36      | 44      | 18     |
+| 4 seconds              | 39      | 52      | 7      |
+| 5 seconds              | 30      | 55      | 13     |
+|------------------------|---------|---------|--------|
+| **Total**              | **186** | **239** | **65** |
+|------------------------|---------|---------|--------|
+| 1000 moves             | 47      | 35      | 16     |
+| 2000 moves             | 50      | 35      | 13     |
+| 3000 moves             | 42      | 47      | 9      |
+| 4000 moves             | 49      | 42      | 7      |
+| 5000 moves             | 61      | 31      | 6      |
+|------------------------|---------|---------|--------|
+| **Total**              | **249** | **190** | **51** |
+
+## Conclusion
+
+Based on time usage alone, alpha-beta seems to be superior to
+the implementation of the min/max approximation approach.
+However, if comparison was based on move-based resource limits, the
+story is reversed: min/max approximation is definitely superior. 
+
+[^1]:
+[Game Tree Searching by Min / Max Approximation](https://people.csail.mit.edu/rivest/pubs/Riv87c.pdf)
