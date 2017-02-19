@@ -1,0 +1,213 @@
+---
+title: "Isolation Heuristic Analysis"
+author: "Artem Larionov"
+date: "2/19/2017"
+output: pdf_document
+abstract: "The goal of this analysis is to compare performance of different heuristics for Isolation game. In this analysis the following three different heuristics were explored: a) an amount of moves of the player; b) an amount of moves of the player minus an amount of moves of the opponent; c) an amount of moves of the player minus an amount of moves of the opponent multiplaied by 5. Based on T-test, heuristic B has the best winrate compared to other heuristics."
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+```
+
+# Introduction
+
+In this analysis we will explore different heuristics for an adversarial search agent to play the game "Isolation". 
+
+Isolation is a deterministic, two-player game of perfect information in which the players alternate turns moving a single piece from one cell to another on a board. Whenever either player occupies a cell, that cell becomes blocked for the remainder of the game. The first player with no remaining legal moves loses, and the opponent is declared the winner.
+
+To test our heuristics we will use Student's t-test[^1] on pairs of heuristics. The null hypotesis will be that both heuristics have the same winrate. 
+
+# Heuristics
+
+In this analysis the following three different heuristics were explored: 
+
+* an amount of moves of the player (A).
+* an amount of moves of the player minus an amount of moves of the opponent (B).
+* an amount of moves of the player minus an amount of moves of the opponent multiplaied by 5 (C).
+
+Despite Heurisirc B is the same heuristic as from the lecture and used as a baseline in `tournament.py`, we will include it into the analysis to show an example of t-test when we failed to reject the null hypotesis.
+
+# Data
+
+To collect data for this analysis we will use following command for all three heuristics, specifying the file where to store the result, `tournament.txt`.
+
+```{bash, eval=FALSE}
+for i in {1..100}; do 
+python tournament.py | grep % | sed -e's/[^0-9.]//g' | paste -sd " " - >> tournament.txt; 
+done
+```
+
+```{r}
+# Heuristic A: moves(player)
+cnames = c('Winrate.Baseline', 'Winrate.HeuristicA')
+tournament1 <- read.table('./tournament1.txt', header = F, col.names = cnames)
+
+# Heuristic B: moves(player) - moves(another_plauer)
+cnames = c('Winrate.Baseline', 'Winrate.HeuristicB')
+tournament  <- read.table('./tournament.txt',  header = F, col.names = cnames)
+
+# Heuristic C: moves(player) - 5 * moves(another_plauer)
+cnames = c('Winrate.Baseline', 'Winrate.HeuristicC')
+tournament2 <- read.table('./tournament2.txt', header = F, col.names = cnames)
+```
+
+```{r, echo=FALSE}
+ggplot(
+  tournament, aes(x=Winrate.Baseline)
+) + geom_histogram(
+  bins=15, fill = rgb(1,0,0,0.5), col = 'red'
+) + geom_vline(
+  aes(xintercept=mean(Winrate.Baseline)), 
+  color="red", 
+  linetype="dashed", 
+  size=1
+) + ggtitle(
+  'Winrate distribution for Baseline Heuristic'
+) + xlab('winrate')
+```
+
+# Hypothesis test
+
+## Baseline vs Heuristic A
+
+```{r, echo=FALSE}
+tournament_data <- rbind(
+  data.frame(heuristic = 'baseline',   winrate = tournament1$Winrate.Baseline),
+  data.frame(heuristic = 'heuristicB', winrate = tournament1$Winrate.HeuristicA)
+)
+
+ggplot(
+  tournament_data, aes(x=winrate)
+) + geom_histogram(
+  data = subset(tournament_data, heuristic == 'baseline'),
+  bins=15,
+  fill = rgb(1,0,0,0.5),
+  col  = 'red'
+) + geom_histogram(
+  data = subset(tournament_data, heuristic != 'baseline'),
+  bins=15,
+  fill = rgb(0,0,1,0.5),
+  col  = 'blue'
+) + geom_vline(
+  data = subset(tournament_data, heuristic == 'baseline'),
+  aes(xintercept=mean(winrate)), 
+  color="red", 
+  linetype="dashed", 
+  size=1
+) + geom_vline(
+  data = subset(tournament_data, heuristic != 'baseline'),
+  aes(xintercept=mean(winrate)), 
+  color="blue", 
+  linetype="dashed", 
+  size=1
+)
+```
+
+mu0 - Heuristics have the same winrate
+
+```{r, results='hold'}
+t <- t.test(tournament1$Winrate.Baseline, tournament1$Winrate.HeuristicA)
+t$conf.int
+t$p.value
+```
+
+`Confidence interval` doesn’t contain zero and `p-value` is very small, so we can reject the null hypotesis and conclude that heuristic A has worse winrate than baseline heuristic.
+
+## Baseline vs Heuristic B 
+
+```{r, echo=FALSE}
+tournament_data <- rbind(
+  data.frame(heuristic = 'baseline',   winrate = tournament$Winrate.Baseline),
+  data.frame(heuristic = 'heuristicB', winrate = tournament$Winrate.HeuristicB)
+)
+
+ggplot(
+  tournament_data, aes(x=winrate)
+) + geom_histogram(
+  data = subset(tournament_data, heuristic == 'baseline'),
+  bins=15,
+  fill = rgb(1,0,0,0.5),
+  col  = 'red'
+) + geom_histogram(
+  data = subset(tournament_data, heuristic != 'baseline'),
+  bins=15,
+  fill = rgb(0,0,1,0.5),
+  col  = 'blue'
+) + geom_vline(
+  data = subset(tournament_data, heuristic == 'baseline'),
+  aes(xintercept=mean(winrate)), 
+  color="red", 
+  linetype="dashed", 
+  size=1
+) + geom_vline(
+  data = subset(tournament_data, heuristic != 'baseline'),
+  aes(xintercept=mean(winrate)), 
+  color="blue", 
+  linetype="dashed", 
+  size=1
+)
+```
+
+mu0 - Heuristics have the same winrate
+
+```{r, results='hold'}
+t <- t.test(tournament$Winrate.Baseline, tournament$Winrate.HeuristicB)
+t$conf.int
+t$p.value
+```
+
+`Confidence interval` contains zero and `p-value` is about `80%`, so we failed to reject the null hypotesis. It means that difference in winrates for heuristic B and baseline is insignificant, as expected, since it's the same heuristic.
+
+## Baseline vs Heuristic C
+
+```{r, echo=FALSE}
+tournament_data <- rbind(
+  data.frame(heuristic = 'baseline',   winrate = tournament2$Winrate.Baseline),
+  data.frame(heuristic = 'heuristicB', winrate = tournament2$Winrate.HeuristicC)
+)
+
+ggplot(
+  tournament_data, aes(x=winrate)
+) + geom_histogram(
+  data = subset(tournament_data, heuristic == 'baseline'),
+  bins=15,
+  fill = rgb(1,0,0,0.5),
+  col  = 'red'
+) + geom_histogram(
+  data = subset(tournament_data, heuristic != 'baseline'),
+  bins=15,
+  fill = rgb(0,0,1,0.5),
+  col  = 'blue'
+) + geom_vline(
+  data = subset(tournament_data, heuristic == 'baseline'),
+  aes(xintercept=mean(winrate)), 
+  color="red", 
+  linetype="dashed", 
+  size=1
+) + geom_vline(
+  data = subset(tournament_data, heuristic != 'baseline'),
+  aes(xintercept=mean(winrate)), 
+  color="blue", 
+  linetype="dashed", 
+  size=1
+)
+```
+
+mu0 - Heuristics have the same winrate
+
+```{r, results='hold'}
+t <- t.test(tournament2$Winrate.Baseline, tournament2$Winrate.HeuristicC)
+t$conf.int
+t$p.value
+```
+
+`Confidence interval` doesn’t contain zero and `p-value` is very small, so we can reject the null hypotesis, once again, and conclude that heuristic C has worse winrate than baseline heuristic.
+
+# Conclusion
+
+Compared this three heuristics we can conclude that baseline heuristics has better winrate than both alternative heuristics.
+
+[^1]:
+[Student's t-test](https://en.wikipedia.org/wiki/Student's_t-test)
