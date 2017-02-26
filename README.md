@@ -3,7 +3,9 @@
 
 ## Files
 Implementation of the game agent - [game_agent.py](game_agent.py)
+
 Heuristic Analysis - [heuristic_analysis.pdf](heuristic_analysis.pdf)
+
 Review of the research - [research_review.pdf](research_review.pdf)
 
 ## Synopsis
